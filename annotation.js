@@ -8,8 +8,108 @@ window.addEventListener("DOMContentLoaded", () => {
   const annotations = [];
   let current_index = -1;
   const annotationViewer = document.getElementById("annotation-viewer");
+  let current_chapter = undefined;
+  const all_chapters = [];
   const difference = 300;
   const velocity = 500;
+  const prev = document.getElementById("prev");
+  const next = document.getElementById("next");
+  prev.addEventListener("click", () => {
+    if (current_chapter === undefined) {
+      return;
+    }
+    if (current_chapter === 0) {
+      return;
+    }
+    current_chapter--;
+    fetch(
+      api + "get_chapter?book=book.epub&href=" + all_chapters[current_chapter],
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/text",
+        },
+      }
+    )
+      .then((response) => response.text())
+      .then((data) => {
+        let html_temp = document.createElement("div");
+        html_temp.style.display = "none";
+        html_temp.innerHTML = data;
+        let paras = html_temp.getElementsByTagName("p");
+        paras = Array.from(paras);
+        paras = paras.map((para) => para.innerText);
+        paras = paras.filter((para) => para.length > 0);
+        paras = paras.sort((a, b) => b.length - a.length);
+        paragraphs = paras.slice(0, 3);
+        html_temp = null;
+        parseHTMLToPlainText(data);
+        window.scrollTo({
+          top: 0,
+          left: 0,
+          behavior: "instant",
+        });
+      })
+      .catch((error) => {
+        console.log("Error fetching chapter text:", error);
+      });
+
+    annotations.length = 0;
+    annotationContainer.innerHTML = "";
+    current_index = -1;
+    currentQuestions = [];
+    questions.innerHTML = "";
+  });
+  next.addEventListener("click", () => {
+    if (current_chapter === undefined) {
+      return;
+    }
+    if (current_chapter === all_chapters.length - 1) {
+      return;
+    }
+    current_chapter++;
+    fetch(
+      api + "get_chapter?book=book.epub&href=" + all_chapters[current_chapter],
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/text",
+        },
+      }
+    )
+      .then((response) => response.text())
+      .then((data) => {
+        let html_temp = document.createElement("div");
+        html_temp.style.display = "none";
+        html_temp.innerHTML = data;
+        let paras = html_temp.getElementsByTagName("p");
+        paras = Array.from(paras);
+        paras = paras.map((para) => para.innerText);
+        paras = paras.filter((para) => para.length > 0);
+        paras = paras.sort((a, b) => b.length - a.length);
+        paragraphs = paras.slice(0, 3);
+        html_temp = null;
+
+        parseHTMLToPlainText(data);
+        // scroll up
+        window.scrollTo({
+          top: 0,
+          left: 0,
+          behavior: "instant",
+        });
+      })
+      .catch((error) => {
+        console.log("Error fetching chapter text:", error);
+      });
+
+    annotations.length = 0;
+    // annotationViewer.innerHTML = "";
+    // annotationShower.innerHTML = "";
+    annotationContainer.innerHTML = "";
+    current_index = -1;
+    currentQuestions = [];
+    questions.innerHTML = "";
+  });
   // const annotationShower = document.getElementById("annotations");
   const questionButton = document.getElementById("quest");
   let currentQuestions = [];
@@ -120,7 +220,7 @@ window.addEventListener("DOMContentLoaded", () => {
       annotationButton.classList.add("annotation-button");
       annotationButton.addEventListener(
         "click",
-        createAnnotation.bind(null, newNode)
+        createAnnotation.bind(null, newNode, "text")
       );
 
       const imageButton = document.createElement("button");
@@ -132,7 +232,7 @@ window.addEventListener("DOMContentLoaded", () => {
       imageButton.classList.add("image-button");
       imageButton.addEventListener(
         "click",
-        createImageAnnotation.bind(null, newNode)
+        createAnnotation.bind(null, newNode, "image")
       );
 
       const cancelButton = document.createElement("button");
@@ -156,30 +256,47 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  async function createAnnotation(newNode) {
-    let res = await fetch(api + "text_annotation", {
-      method: "POST",
-      body: JSON.stringify({
-        book: "The Grapes of Wrath",
-        text: newNode.textContent,
-      }),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    const annotation = await res.text();
+  async function createAnnotation(newNode, type) {
+    let annotation;
+    if (type == "text") {
+      let res = await fetch(api + "text_annotation", {
+        method: "POST",
+        body: JSON.stringify({
+          book: "The Grapes of Wrath",
+          text: newNode.textContent,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      annotation = await res.text();
+    } else {
+      let res = await fetch(api + "image_annotation", {
+        method: "POST",
+        body: JSON.stringify({
+          text: newNode.textContent,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      annotation = await res.text();
+    }
     // const annotation = newNode.textContent;
 
     const annotationDiv = document.createElement("div");
     annotationDiv.classList.add("annotation-div");
-    // const title = document.createElement("div");
-    // title.classList.add("title");
-    // title.textContent = "Annotation";
-    // annotationDiv.appendChild(title);
-    const annotationText = document.createElement("div");
-    annotationText.classList.add("annotation-text");
-    annotationText.textContent = annotation;
-    annotationDiv.appendChild(annotationText);
+    if (type == "text") {
+      const annotationText = document.createElement("div");
+      annotationText.classList.add("annotation-text");
+      annotationText.textContent = annotation;
+      annotationDiv.appendChild(annotationText);
+    } else {
+      const annotationImage = document.createElement("img");
+      annotationImage.classList.add("annotation-image");
+      annotationImage.src = annotation;
+      annotationDiv.appendChild(annotationImage);
+    }
     annotationContainer.appendChild(annotationDiv);
     lastHighlight = undefined;
 
@@ -241,7 +358,6 @@ window.addEventListener("DOMContentLoaded", () => {
       duration: ((Math.abs(movement) / velocity) * 1000) / 1.2,
       easing: "cubicBezier(0.595, 0.950, 0.640, 1.240)",
     });
-    console.log((Math.abs(movement) / velocity) * 1000);
     current_animation.finished.then(() => {
       document.querySelectorAll(".annotation-div").forEach((div) => {
         div.style.backgroundColor = "white";
@@ -263,14 +379,12 @@ window.addEventListener("DOMContentLoaded", () => {
     let closest = 0;
     let closest_distance = 9999999;
     for (let i = 0; i < annotations.length; i++) {
-      // console.log(annotations[i].element.innerText, annotations[i].position);
       let distance = Math.abs(currentScroll - annotations[i].position);
       if (distance < closest_distance) {
         closest_distance = distance;
         closest = i;
       }
     }
-    // console.log(currentScroll);
     moveAnnotationsTo(closest);
   });
 
@@ -395,7 +509,6 @@ window.addEventListener("DOMContentLoaded", () => {
   //   });
 
   const dropdown = document.getElementById("chapters");
-  const links = [];
 
   fetch(api + "flattened_chapters?book=book.epub", {
     method: "GET",
@@ -404,13 +517,13 @@ window.addEventListener("DOMContentLoaded", () => {
     .then((data) => {
       data = JSON.parse(data);
       data.forEach((chapter) => {
+        all_chapters.push(chapter.link);
         const listItem = document.createElement("li");
         const link = document.createElement("a");
         link.classList.add("dropdown-item");
         link.href = chapter.link;
 
         link.textContent = chapter.title;
-        // links.push(chapter.link);
 
         listItem.appendChild(link);
         dropdown.appendChild(listItem);
@@ -428,6 +541,9 @@ window.addEventListener("DOMContentLoaded", () => {
         lastHighlight = undefined;
       }
       let chapterUrl = event.target.href.split("/").pop();
+
+      current_chapter = all_chapters.indexOf(chapterUrl);
+
       // Make a GET request to fetch the chapter text
       fetch(api + "get_chapter?book=book.epub&href=" + chapterUrl, {
         method: "GET",
@@ -458,6 +574,7 @@ window.addEventListener("DOMContentLoaded", () => {
       // annotationViewer.innerHTML = "";
       // annotationShower.innerHTML = "";
       annotationContainer.innerHTML = "";
+      current_index = -1;
       currentQuestions = [];
       questions.innerHTML = "";
     }
