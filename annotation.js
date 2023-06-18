@@ -1,4 +1,5 @@
 window.addEventListener("DOMContentLoaded", () => {
+  const api = "http://localhost:5000";
   const dialog = document.getElementById("question-dialog");
   const textContainer = document.getElementById("text-container");
   const annotationContainer = document.getElementById("annotation-container");
@@ -26,16 +27,16 @@ window.addEventListener("DOMContentLoaded", () => {
         questions.appendChild(textarea);
       }
       let submit = document.createElement("button");
-      // center submit
       submit.textContent = "Submit";
       submit.classList.add("submit");
       questions.appendChild(submit);
-      submit.addEventListener("click", () => {
+      submit.addEventListener("click", async () => {
         let responses = questions.getElementsByClassName("response");
         let res = [];
         for (let i = 0; i < responses.length; i++) {
           res.push(responses[i].value);
         }
+
         let query = {
           data: [
             {
