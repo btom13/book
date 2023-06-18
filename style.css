@@ -20,6 +20,12 @@ body {
   color: black;
   margin-top: 5px;
 }
+.annotation-image {
+  width: 200px;
+}
+div.annotation-image {
+  width: 232px !important;
+}
 
 .page {
   background-color: #fff;

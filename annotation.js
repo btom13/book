@@ -5,7 +5,7 @@ window.addEventListener("DOMContentLoaded", () => {
   const dialog = document.getElementById("question-dialog");
   const textContainer = document.getElementById("text-container");
   const annotationContainer = document.getElementById("annotation-container");
-  const annotations = [];
+  let annotations = [];
   let current_index = -1;
   const annotationViewer = document.getElementById("annotation-viewer");
   let current_chapter = undefined;
@@ -14,6 +14,75 @@ window.addEventListener("DOMContentLoaded", () => {
   const velocity = 500;
   const prev = document.getElementById("prev");
   const next = document.getElementById("next");
+  const storage = {};
+
+  function reset(data, index, previous) {
+    const url = all_chapters[index];
+    // annotations.length = 0;
+    // annotationContainer.innerHTML = "";
+    // current_index = -1;
+    // currentQuestions = [];
+    // questions.innerHTML = "";
+    if (previous) {
+      const prev_url = all_chapters[previous];
+      storage[prev_url]["annotations"] = annotations;
+      storage[prev_url]["annotationContainerInnerHTML"] =
+        annotationContainer.innerHTML;
+
+      storage[prev_url]["current_index"] = current_index;
+      storage[prev_url]["currentQuestions"] = currentQuestions;
+      storage[prev_url]["questionsInnerHTML"] = questions.innerHTML;
+      storage[prev_url]["paragraphs"] = paragraphs;
+      storage[prev_url]["html"] = textContainer.innerHTML;
+    }
+    annotations = storage[url]["annotations"];
+    annotationContainer.innerHTML =
+      storage[url]["annotationContainerInnerHTML"];
+    const annotation_divs =
+      annotationContainer.querySelectorAll(".annotation-div");
+    for (let i = 0; i < annotation_divs.length; i++) {
+      annotations[i].element = annotation_divs[i];
+    }
+    current_index = storage[url]["current_index"];
+    currentQuestions = storage[url]["currentQuestions"];
+    questions.innerHTML = storage[url]["questionsInnerHTML"];
+    let html_temp = document.createElement("div");
+    html_temp.style.display = "none";
+    html_temp.innerHTML = data;
+    let paras = html_temp.getElementsByTagName("p");
+    paras = Array.from(paras);
+    paras = paras.map((para) => para.innerText);
+    paras = paras.filter((para) => para.length > 0);
+    paras = paras.sort((a, b) => b.length - a.length);
+    paragraphs = paras.slice(0, 3);
+    paragraphs = storage[url]["paragraphs"];
+    html_temp = null;
+    if (storage[url]["html"] !== undefined && storage[url]["html"] !== "") {
+      textContainer.innerHTML = storage[url]["html"];
+      const highlights = Array.from(
+        textContainer.getElementsByClassName("highlight")
+      );
+      highlights.forEach((newNode) => {
+        newNode.addEventListener("mouseover", () => {
+          let index = annotations.findIndex(
+            (item) =>
+              // item.newNode.offsetTop == newNode.offsetTop &&
+              // item.newNode.offsetLeft == newNode.offsetLeft &&
+              item.newNode.innerHTML == newNode.innerHTML
+          );
+          moveAnnotationsTo(index);
+        });
+      });
+    } else {
+      parseHTMLToPlainText(data);
+    }
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "instant",
+    });
+  }
+
   prev.addEventListener("click", () => {
     if (current_chapter === undefined) {
       return;
@@ -33,32 +102,11 @@ window.addEventListener("DOMContentLoaded", () => {
     )
       .then((response) => response.text())
       .then((data) => {
-        let html_temp = document.createElement("div");
-        html_temp.style.display = "none";
-        html_temp.innerHTML = data;
-        let paras = html_temp.getElementsByTagName("p");
-        paras = Array.from(paras);
-        paras = paras.map((para) => para.innerText);
-        paras = paras.filter((para) => para.length > 0);
-        paras = paras.sort((a, b) => b.length - a.length);
-        paragraphs = paras.slice(0, 3);
-        html_temp = null;
-        parseHTMLToPlainText(data);
-        window.scrollTo({
-          top: 0,
-          left: 0,
-          behavior: "instant",
-        });
+        reset(data, current_chapter, current_chapter + 1);
       })
       .catch((error) => {
         console.log("Error fetching chapter text:", error);
       });
-
-    annotations.length = 0;
-    annotationContainer.innerHTML = "";
-    current_index = -1;
-    currentQuestions = [];
-    questions.innerHTML = "";
   });
   next.addEventListener("click", () => {
     if (current_chapter === undefined) {
@@ -79,36 +127,11 @@ window.addEventListener("DOMContentLoaded", () => {
     )
       .then((response) => response.text())
       .then((data) => {
-        let html_temp = document.createElement("div");
-        html_temp.style.display = "none";
-        html_temp.innerHTML = data;
-        let paras = html_temp.getElementsByTagName("p");
-        paras = Array.from(paras);
-        paras = paras.map((para) => para.innerText);
-        paras = paras.filter((para) => para.length > 0);
-        paras = paras.sort((a, b) => b.length - a.length);
-        paragraphs = paras.slice(0, 3);
-        html_temp = null;
-
-        parseHTMLToPlainText(data);
-        // scroll up
-        window.scrollTo({
-          top: 0,
-          left: 0,
-          behavior: "instant",
-        });
+        reset(data, current_chapter, current_chapter - 1);
       })
       .catch((error) => {
         console.log("Error fetching chapter text:", error);
       });
-
-    annotations.length = 0;
-    // annotationViewer.innerHTML = "";
-    // annotationShower.innerHTML = "";
-    annotationContainer.innerHTML = "";
-    current_index = -1;
-    currentQuestions = [];
-    questions.innerHTML = "";
   });
   // const annotationShower = document.getElementById("annotations");
   const questionButton = document.getElementById("quest");
@@ -270,6 +293,7 @@ window.addEventListener("DOMContentLoaded", () => {
         },
       });
       annotation = await res.text();
+      // annotation = newNode.textContent;
     } else {
       let res = await fetch(api + "image_annotation", {
         method: "POST",
@@ -282,7 +306,6 @@ window.addEventListener("DOMContentLoaded", () => {
       });
       annotation = await res.text();
     }
-    // const annotation = newNode.textContent;
 
     const annotationDiv = document.createElement("div");
     annotationDiv.classList.add("annotation-div");
@@ -294,6 +317,7 @@ window.addEventListener("DOMContentLoaded", () => {
     } else {
       const annotationImage = document.createElement("img");
       annotationImage.classList.add("annotation-image");
+      annotationDiv.classList.add("annotation-image");
       annotationImage.src = annotation;
       annotationDiv.appendChild(annotationImage);
     }
@@ -517,6 +541,16 @@ window.addEventListener("DOMContentLoaded", () => {
     .then((data) => {
       data = JSON.parse(data);
       data.forEach((chapter) => {
+        storage[chapter.link] = {
+          title: chapter.title,
+          annotations: [],
+          annotationContainerInnerHTML: "",
+          current_index: -1,
+          currentQuestions: [],
+          questionsInnerHTML: "",
+          paragraphs: [],
+          html: "",
+        };
         all_chapters.push(chapter.link);
         const listItem = document.createElement("li");
         const link = document.createElement("a");
@@ -541,7 +575,7 @@ window.addEventListener("DOMContentLoaded", () => {
         lastHighlight = undefined;
       }
       let chapterUrl = event.target.href.split("/").pop();
-
+      previous_chapter = current_chapter;
       current_chapter = all_chapters.indexOf(chapterUrl);
 
       // Make a GET request to fetch the chapter text
@@ -553,30 +587,11 @@ window.addEventListener("DOMContentLoaded", () => {
       })
         .then((response) => response.text())
         .then((data) => {
-          let html_temp = document.createElement("div");
-          html_temp.style.display = "none";
-          html_temp.innerHTML = data;
-          let paras = html_temp.getElementsByTagName("p");
-          paras = Array.from(paras);
-          paras = paras.map((para) => para.innerText);
-          paras = paras.filter((para) => para.length > 0);
-          paras = paras.sort((a, b) => b.length - a.length);
-          paragraphs = paras.slice(0, 3);
-          html_temp = null;
-
-          parseHTMLToPlainText(data);
+          reset(data, current_chapter, previous_chapter);
         })
         .catch((error) => {
           console.log("Error fetching chapter text:", error);
         });
-
-      annotations.length = 0;
-      // annotationViewer.innerHTML = "";
-      // annotationShower.innerHTML = "";
-      annotationContainer.innerHTML = "";
-      current_index = -1;
-      currentQuestions = [];
-      questions.innerHTML = "";
     }
   });
 });
