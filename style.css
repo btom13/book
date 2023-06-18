@@ -9,6 +9,9 @@ html {
   width: 100vw;
   height: 100vh;
 }
+body {
+  overflow-x: hidden;
+}
 
 .annotation {
   display: none;
@@ -28,11 +31,12 @@ html {
   background-color: #fff;
   top: 50%;
   transform: translate(0%, -50%);
-  width: calc(4 / 12 * 100%);
-  min-height: 40%;
+  width: calc(4.2 / 12 * 100%);
+  /* min-height: 40%; */
+  /* position: fixed; */
   position: fixed;
   border: 2px solid black;
-  padding: 2em 2em 1em 2em;
+  padding: 1em;
 }
 
 .highlight {
@@ -120,6 +124,7 @@ input {
   top: 0;
   right: 0;
   padding: 0.5em;
+  margin-right: -1em;
   font-size: 20px;
 }
 .bottom-button {
@@ -128,4 +133,8 @@ input {
 
 img {
   width: 100%;
+}
+
+.navbar.navbar-expand-lg.navbar-dark {
+  z-index: 2;
 }

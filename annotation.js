@@ -6,7 +6,10 @@ window.addEventListener("DOMContentLoaded", () => {
   const textContainer = document.getElementById("text-container");
   const annotationContainer = document.getElementById("annotation-container");
   const annotations = [];
+  let current_index = -1;
   const annotationViewer = document.getElementById("annotation-viewer");
+  const difference = 300;
+  const velocity = 500;
   // const annotationShower = document.getElementById("annotations");
   const questionButton = document.getElementById("quest");
   let currentQuestions = [];
@@ -18,7 +21,7 @@ window.addEventListener("DOMContentLoaded", () => {
         method: "POST",
         body: JSON.stringify({
           paragraphs: paragraphs,
-          book: "The Great Gatsby",
+          book: "The Grapes of Wrath",
         }),
         headers: {
           "Content-Type": "application/json",
@@ -157,7 +160,7 @@ window.addEventListener("DOMContentLoaded", () => {
     let res = await fetch(api + "text_annotation", {
       method: "POST",
       body: JSON.stringify({
-        book: "The Great Gatsby",
+        book: "The Grapes of Wrath",
         text: newNode.textContent,
       }),
       headers: {
@@ -165,29 +168,111 @@ window.addEventListener("DOMContentLoaded", () => {
       },
     });
     const annotation = await res.text();
+    // const annotation = newNode.textContent;
 
+    const annotationDiv = document.createElement("div");
+    annotationDiv.classList.add("annotation-div");
+    // const title = document.createElement("div");
+    // title.classList.add("title");
+    // title.textContent = "Annotation";
+    // annotationDiv.appendChild(title);
+    const annotationText = document.createElement("div");
+    annotationText.classList.add("annotation-text");
+    annotationText.textContent = annotation;
+    annotationDiv.appendChild(annotationText);
+    annotationContainer.appendChild(annotationDiv);
     lastHighlight = undefined;
 
-    newNode.addEventListener(
-      "mouseover",
-      showAnnotation.bind(null, annotation)
-    );
+    newNode.addEventListener("mouseover", () => {
+      let index = annotations.findIndex((item) => item.newNode === newNode);
+      moveAnnotationsTo(index);
+    });
     newNode.addEventListener("mouseout", hideAnnotation);
     newNode.addEventListener("click", deleteAnnotation);
     // newnode position
-    console.log(newNode.getBoundingClientRect());
-
-    annotations.push({
-      element: newNode,
+    let current = {
+      newNode: newNode,
       annotation: annotation,
-      position:
-        (newNode.getBoundingClientRect()["top"] +
-          newNode.getBoundingClientRect()["bottom"]) /
-        2,
+      position: newNode.offsetTop + newNode.offsetHeight / 2,
+      x: newNode.getBoundingClientRect()["x"],
+      element: annotationDiv,
+    };
+
+    annotations.push(current);
+    // sort annotationContainer by position
+    annotations.sort((a, b) => {
+      if (a.position == b.position) return a.x - b.x;
+      return a.position - b.position;
     });
+    for (let i = 0; i < annotations.length; i++) {
+      annotations[i].element.style.top = `${difference * i}px`;
+    }
+    let index = annotations.findIndex((item) => item === current);
+    const center = document.body.getBoundingClientRect().height / 2;
+
+    let movement = annotations[index].element.offsetTop - center;
+    for (let i = 0; i < annotations.length; i++) {
+      annotations[i].element.style.top = `${
+        annotations[i].element.offsetTop - movement
+      }px`;
+    }
+    annotationContainer.innerHTML = "";
+    annotations.forEach((annotation) => {
+      annotationContainer.appendChild(annotation.element);
+    });
+
     // updateAnnotations();
     hideButtons();
   }
+
+  let current_animation = undefined;
+  function moveAnnotationsTo(index) {
+    if (index === current_index) return;
+    current_index = index;
+    if (current_animation) {
+      current_animation.remove(".annotation-div");
+    }
+    const center = document.body.getBoundingClientRect().height / 2;
+    let movement = annotations[index].element.offsetTop - center;
+    current_animation = anime({
+      targets: ".annotation-div",
+      top: `-=${movement}`,
+      // duration: 800,
+      duration: ((Math.abs(movement) / velocity) * 1000) / 1.2,
+      easing: "cubicBezier(0.595, 0.950, 0.640, 1.240)",
+    });
+    console.log((Math.abs(movement) / velocity) * 1000);
+    current_animation.finished.then(() => {
+      document.querySelectorAll(".annotation-div").forEach((div) => {
+        div.style.backgroundColor = "white";
+      });
+      current_animation = undefined;
+    });
+  }
+  let last_scroll = undefined;
+  window.addEventListener("scroll", () => {
+    if (last_scroll && Date.now() - last_scroll < 100) {
+      return;
+    }
+    last_scroll = Date.now();
+    if (annotations.length === 0) return;
+    // look for closest annotation
+    let currentScroll =
+      (document.documentElement.scrollTop || document.body.scrollTop) +
+      document.body.offsetHeight / 2;
+    let closest = 0;
+    let closest_distance = 9999999;
+    for (let i = 0; i < annotations.length; i++) {
+      // console.log(annotations[i].element.innerText, annotations[i].position);
+      let distance = Math.abs(currentScroll - annotations[i].position);
+      if (distance < closest_distance) {
+        closest_distance = distance;
+        closest = i;
+      }
+    }
+    // console.log(currentScroll);
+    moveAnnotationsTo(closest);
+  });
 
   async function createImageAnnotation(newNode) {
     let res = await fetch(api + "image_annotation", {
@@ -239,7 +324,7 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 
   function hideAnnotation() {
-    annotationViewer.textContent = "";
+    // annotationViewer.textContent = "";
   }
 
   function updateAnnotations() {
@@ -335,6 +420,8 @@ window.addEventListener("DOMContentLoaded", () => {
       console.log("Error fetching chapters:", error);
     });
   dropdown.addEventListener("click", (event) => {
+    event.preventDefault();
+
     if (event.target.classList.contains("dropdown-item")) {
       if (lastHighlight) {
         lastHighlight.click();
@@ -368,11 +455,11 @@ window.addEventListener("DOMContentLoaded", () => {
         });
 
       annotations.length = 0;
-      annotationViewer.innerHTML = "";
+      // annotationViewer.innerHTML = "";
       // annotationShower.innerHTML = "";
+      annotationContainer.innerHTML = "";
       currentQuestions = [];
       questions.innerHTML = "";
-      event.preventDefault();
     }
   });
 });
