@@ -52,7 +52,10 @@ def upload():
     }
 }
 """
-openai.api_key = ""
+with open("config.json") as f:
+    config = json.load(f)
+    openai.api_key = config['OPEN_AI_KEY']
+
 @app.route("/text_annotation", methods=["POST"])
 def text_annotation():
     data = request.get_json()
