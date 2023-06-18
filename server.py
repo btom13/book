@@ -29,6 +29,8 @@ def upload():
     return 'a'
 
 
+
+
 """
 {
     "choices": [
@@ -121,7 +123,22 @@ def get_chapters():  # frontm.html#pref04
     book = epub.read_epub(book_name)
     return find_chapter(chapter, book)
 
+@app.route("/flattened_chapters", methods=["GET"])
+def get_flattened_chapter():
+    book_name = request.args.get('book')
+    book = epub.read_epub(book_name)
 
+    def flatten(arr):
+        if hasattr(arr, "__iter__"):
+            ret = []
+            for x in arr:
+                ret += flatten(x)
+            return ret
+        else:
+            return [arr]
+    
+    return json.dumps(flatten(book.toc), cls=MyEncoder)
+    
 @app.route("/toc", methods=["GET"])
 def toc():
     book_name = request.args.get('book')
