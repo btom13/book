@@ -12,6 +12,7 @@ window.addEventListener("DOMContentLoaded", () => {
   const all_chapters = [];
   const difference = 300;
   const velocity = 500;
+  let paragraphs = [];
   const prev = document.getElementById("prev");
   const next = document.getElementById("next");
 
@@ -169,7 +170,11 @@ window.addEventListener("DOMContentLoaded", () => {
     paras = paras.filter((para) => para.length > 0);
     paras = paras.sort((a, b) => b.length - a.length);
     paragraphs = paras.slice(0, 3);
-    paragraphs = storage[url]["paragraphs"];
+    console.log(paras);
+    console.log(paragraphs);
+    if (storage[url]["paragraphs"].length > 0) {
+      paragraphs = storage[url]["paragraphs"];
+    }
     html_temp = null;
     if (storage[url]["html"] !== undefined && storage[url]["html"] !== "") {
       textContainer.innerHTML = storage[url]["html"];
@@ -250,7 +255,7 @@ window.addEventListener("DOMContentLoaded", () => {
   // const annotationShower = document.getElementById("annotations");
   const questionButton = document.getElementById("quest");
   let currentQuestions = [];
-  let paragraphs = [];
+  // let paragraphs = [];
   const questions = document.getElementById("questions");
   async function getQuestions() {
     if (currentQuestions.length === 0) {
