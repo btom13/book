@@ -68,7 +68,7 @@ def text_annotation():
     prompt = f'###Write a 2 to 5 sentence analysis of the following text from "{book}". DO NOT mention the name of the book or author###\n\n"""{text}"""'
     print(prompt)
     # make request
-    response = openai.ChatCompletion.create(model="gpt-4",
+    response = openai.ChatCompletion.create(model="gpt-3.5-turbo",
                                             messages=[{
                                                 "role":
                                                 "system",
@@ -94,7 +94,7 @@ def image_annotation():
     print("simplification prompt", prompt)
 
     scenePrompt = openai.ChatCompletion.create(
-        model="gpt-4",
+        model="gpt-3.5-turbo",
         messages=[{
             "role": "system",
             "content": "You are a helpful assistant."
@@ -117,17 +117,17 @@ def image_annotation():
 def find_chapter(chapter, book):
     for chap in book.get_items_of_type(ebooklib.ITEM_DOCUMENT):
         if chapter in chap.file_name:
-            return dec(chap)
+            return (chap, dec(chap))
 
 
 # curl "http://localhost:5000/get_chapter?book=book.epub&href=chapter01.html"
 @app.route("/get_chapter", methods=["GET"])
 def get_chapters():  # frontm.html#pref04
-    assert request.method == "GET"
     chapter = request.args.get('href')
     book_name = request.args.get('book')
     book = epub.read_epub(book_name)
-    return find_chapter(chapter, book)
+    print(find_chapter(chapter, book)[0].get_content())
+    return find_chapter(chapter, book)[1]
 
 
 @app.route("/flattened_chapters", methods=["GET"])
@@ -170,7 +170,7 @@ def grade_questions():
         prompt += f'Answer: """{user_answer}"""'
         print("prompt", prompt)
         response = openai.ChatCompletion.create(
-            model="gpt-4",
+            model="gpt-3.5-turbo",
             messages=[
                 {
                     "role": "system",
@@ -208,7 +208,7 @@ def generate_questions():
     for p in paragraphs:
         prompt = f"###Write a question based on this paragraph from {book_name}###\n\n" + f'"""{p}"""'
         response = openai.ChatCompletion.create(
-            model="gpt-4",
+            model="gpt-3.5-turbo",
             messages=[
                 {
                     "role": "system",

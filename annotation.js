@@ -7,7 +7,7 @@ window.addEventListener("DOMContentLoaded", () => {
   const annotationContainer = document.getElementById("annotation-container");
   const annotations = [];
   const annotationViewer = document.getElementById("annotation-viewer");
-  const annotationShower = document.getElementById("annotations");
+  // const annotationShower = document.getElementById("annotations");
   const questionButton = document.getElementById("quest");
   let currentQuestions = [];
   let paragraphs = [];
@@ -18,7 +18,7 @@ window.addEventListener("DOMContentLoaded", () => {
         method: "POST",
         body: JSON.stringify({
           paragraphs: paragraphs,
-          book: "Grapes of Wrath",
+          book: "The Great Gatsby",
         }),
         headers: {
           "Content-Type": "application/json",
@@ -157,7 +157,7 @@ window.addEventListener("DOMContentLoaded", () => {
     let res = await fetch(api + "text_annotation", {
       method: "POST",
       body: JSON.stringify({
-        book: "Grapes of Wrath",
+        book: "The Great Gatsby",
         text: newNode.textContent,
       }),
       headers: {
@@ -174,9 +174,18 @@ window.addEventListener("DOMContentLoaded", () => {
     );
     newNode.addEventListener("mouseout", hideAnnotation);
     newNode.addEventListener("click", deleteAnnotation);
+    // newnode position
+    console.log(newNode.getBoundingClientRect());
 
-    annotations.push({ element: newNode, annotation: annotation });
-    updateAnnotations();
+    annotations.push({
+      element: newNode,
+      annotation: annotation,
+      position:
+        (newNode.getBoundingClientRect()["top"] +
+          newNode.getBoundingClientRect()["bottom"]) /
+        2,
+    });
+    // updateAnnotations();
     hideButtons();
   }
 
@@ -199,7 +208,7 @@ window.addEventListener("DOMContentLoaded", () => {
     newNode.addEventListener("click", deleteAnnotation);
 
     annotations.push({ element: newNode, url: url });
-    updateAnnotations();
+    // updateAnnotations();
     hideButtons();
   }
 
@@ -226,7 +235,7 @@ window.addEventListener("DOMContentLoaded", () => {
       event.stopPropagation();
     }
     hideAnnotation();
-    updateAnnotations();
+    // updateAnnotations();
   }
 
   function hideAnnotation() {
@@ -234,14 +243,14 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 
   function updateAnnotations() {
-    annotationShower.innerHTML = "";
-    for (const annotation of annotations) {
-      if (annotation.annotation) {
-        annotationShower.innerHTML += annotation.annotation + "<br>";
-      } else {
-        annotationShower.innerHTML += `<img src=${annotation.url}>` + "<br>";
-      }
-    }
+    // annotationShower.innerHTML = "";
+    // for (const annotation of annotations) {
+    //   if (annotation.annotation) {
+    //     annotationShower.innerHTML += annotation.annotation + "<br>";
+    //   } else {
+    //     annotationShower.innerHTML += `<img src=${annotation.url}>` + "<br>";
+    //   }
+    // }
   }
 
   function positionButtons(buttonContainer, x, y) {
@@ -265,7 +274,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     var tempElement = document.createElement("div");
     tempElement.innerHTML = html;
-    var title = tempElement.getElementsByTagName("title");
+    var title = tempElement.getElementsByTagName("em");
     var paragraphs = tempElement.getElementsByTagName("p");
     for (var i = 0; i < paragraphs.length; i++) {
       var paragraph = paragraphs[i];
@@ -284,6 +293,13 @@ window.addEventListener("DOMContentLoaded", () => {
     tempElement = null;
 
     textContainer.innerHTML = text;
+    // remove starting br
+    while (
+      textContainer.firstChild &&
+      textContainer.firstChild.tagName === "BR"
+    ) {
+      textContainer.removeChild(textContainer.firstChild);
+    }
   }
   // fetch(api + "get_chapter?book=book.epub&href=chapter10.html", {
   //   method: "GET",
@@ -320,6 +336,10 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   dropdown.addEventListener("click", (event) => {
     if (event.target.classList.contains("dropdown-item")) {
+      if (lastHighlight) {
+        lastHighlight.click();
+        lastHighlight = undefined;
+      }
       let chapterUrl = event.target.href.split("/").pop();
       // Make a GET request to fetch the chapter text
       fetch(api + "get_chapter?book=book.epub&href=" + chapterUrl, {
@@ -349,7 +369,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
       annotations.length = 0;
       annotationViewer.innerHTML = "";
-      annotationShower.innerHTML = "";
+      // annotationShower.innerHTML = "";
       currentQuestions = [];
       questions.innerHTML = "";
       event.preventDefault();
