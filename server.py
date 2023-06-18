@@ -101,17 +101,20 @@ def image_annotation():
         }, {
             "role": "user",
             "content": prompt
-        }])
+        }],
+    )
 
     simplified_prompt = get_gpt_response(scenePrompt)
     print("simplified propmt", simplified_prompt)
     response = openai.Image.create(
         prompt=simplified_prompt,
         n=1,
-        size="1024x1024",
+        size="512x512",
+        response_format="b64_json",
     )
-
-    return response["data"][0]["url"]
+    if response["data"][0]["b64_json"]:
+        print("got it")
+    return response["data"][0]["b64_json"]
 
 
 def find_chapter(chapter, book):

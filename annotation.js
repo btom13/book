@@ -14,7 +14,121 @@ window.addEventListener("DOMContentLoaded", () => {
   const velocity = 500;
   const prev = document.getElementById("prev");
   const next = document.getElementById("next");
+
+  const theme_button = document.getElementById("thing");
+  theme_button.addEventListener("click", () => {
+    document.getElementById("selector").classList.toggle("hidden");
+  });
+  const themes = {
+    default: {
+      background: "#f2f2f2",
+      foreground: "#fff",
+      border: "black",
+      highlight: "rgb(255, 255, 156)",
+      themecolor: "white",
+    },
+    sepia: {
+      background: "#F5F0EB",
+      foreground: "rgb(247,241,228)",
+      border: "#D1C3B7",
+      highlight: "rgb(211,204,190)",
+      themecolor: "rgb(247,241,228)",
+      textcolor: "#59524C",
+    },
+    night: {
+      background: "#333333",
+      foreground: "#666666",
+      border: "#111111",
+      highlight: "rgb(87, 87, 87)",
+      themecolor: "#666666",
+      textcolor: "rgb(247,241,228)",
+    },
+    gray: {
+      background: "#222222",
+      foreground: "rgb(72,72,72)",
+      border: "black",
+      highlight: "rgb(113, 113, 113)",
+      themecolor: "rgb(72,72,72)",
+      textcolor: "rgb(213,213,213)",
+    },
+    purple: {
+      background: "rgb(8,1,32)",
+      foreground: "rgb(37,40,58)",
+      border: "rgb(20,22,31)",
+      highlight: "rgb(63,68,80)",
+      themecolor: "rgb(37,40,58)",
+      textcolor: "rgb(147,150,196)",
+    },
+  };
+  const selectors = document.getElementsByClassName("selecting");
+  const root_theme = document.querySelector(":root");
+  for (let i = 0; i < selectors.length; i++) {
+    selectors[i].addEventListener("click", () => {
+      root_theme.style.setProperty(
+        "--background",
+        themes[selectors[i].id].background
+      );
+      root_theme.style.setProperty(
+        "--foreground",
+        themes[selectors[i].id].foreground
+      );
+      root_theme.style.setProperty("--border", themes[selectors[i].id].border);
+      root_theme.style.setProperty(
+        "--highlight",
+        themes[selectors[i].id].highlight
+      );
+      root_theme.style.setProperty(
+        "--textcolor",
+        themes[selectors[i].id].textcolor
+      );
+      root_theme.style.setProperty(
+        "--themecolor",
+        themes[selectors[i].id].themecolor
+      );
+    });
+    selectors[i].style.backgroundColor = themes[selectors[i].id].themecolor;
+  }
+
   const storage = {};
+  function parseHTMLToPlainText(html) {
+    const titleContainer = document.getElementById("chapter-title");
+
+    var tempElement = document.createElement("div");
+    tempElement.innerHTML = html;
+    var title = tempElement.getElementsByTagName("em");
+    var paragraphs = tempElement.getElementsByTagName("p");
+    for (var i = 0; i < paragraphs.length; i++) {
+      var paragraph = paragraphs[i];
+      var br = document.createElement("br");
+      paragraph.parentNode.replaceChild(br, paragraph);
+    }
+    try {
+      titleContainer.innerHTML = title[0].innerText;
+      title[0].innerHTML = "";
+    } catch {
+      titleContainer.innerHTML = "";
+    }
+
+    var text = tempElement.innerText.replace(/\n\s*\n/g, "<br><br>").trim();
+
+    tempElement = null;
+
+    textContainer.innerHTML = text;
+    // remove starting br
+    while (
+      textContainer.firstChild &&
+      textContainer.firstChild.tagName === "BR"
+    ) {
+      textContainer.removeChild(textContainer.firstChild);
+    }
+  }
+  fetch(api + "get_chapter?book=book.epub&href=chapter01.html", {
+    method: "GET",
+  })
+    .then((res) => res.text())
+    .then((res) => {
+      parseHTMLToPlainText(res);
+    });
 
   function reset(data, index, previous) {
     const url = all_chapters[index];
@@ -279,8 +393,17 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  function showLoadingIcon() {
+    document.querySelector(".loading-icon").style.display = "block";
+  }
+
+  function hideLoadingIcon() {
+    document.querySelector(".loading-icon").style.display = "none";
+  }
+
   async function createAnnotation(newNode, type) {
     let annotation;
+    showLoadingIcon();
     if (type == "text") {
       let res = await fetch(api + "text_annotation", {
         method: "POST",
@@ -292,6 +415,7 @@ window.addEventListener("DOMContentLoaded", () => {
           "Content-Type": "application/json",
         },
       });
+      hideLoadingIcon();
       annotation = await res.text();
       // annotation = newNode.textContent;
     } else {
@@ -304,6 +428,8 @@ window.addEventListener("DOMContentLoaded", () => {
           "Content-Type": "application/json",
         },
       });
+
+      hideLoadingIcon();
       annotation = await res.text();
     }
 
@@ -318,7 +444,7 @@ window.addEventListener("DOMContentLoaded", () => {
       const annotationImage = document.createElement("img");
       annotationImage.classList.add("annotation-image");
       annotationDiv.classList.add("annotation-image");
-      annotationImage.src = annotation;
+      annotationImage.src = "data:image/png;base64," + annotation;
       annotationDiv.appendChild(annotationImage);
     }
     annotationContainer.appendChild(annotationDiv);
@@ -383,9 +509,6 @@ window.addEventListener("DOMContentLoaded", () => {
       easing: "cubicBezier(0.595, 0.950, 0.640, 1.240)",
     });
     current_animation.finished.then(() => {
-      document.querySelectorAll(".annotation-div").forEach((div) => {
-        div.style.backgroundColor = "white";
-      });
       current_animation = undefined;
     });
   }
@@ -492,45 +615,12 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function parseHTMLToPlainText(html) {
-    const titleContainer = document.getElementById("chapter-title");
-
-    var tempElement = document.createElement("div");
-    tempElement.innerHTML = html;
-    var title = tempElement.getElementsByTagName("em");
-    var paragraphs = tempElement.getElementsByTagName("p");
-    for (var i = 0; i < paragraphs.length; i++) {
-      var paragraph = paragraphs[i];
-      var br = document.createElement("br");
-      paragraph.parentNode.replaceChild(br, paragraph);
+  function addEllipsis(text, maxLength) {
+    if (text.length > maxLength) {
+      return text.substring(0, maxLength) + "...";
     }
-    try {
-      titleContainer.innerHTML = title[0].innerText;
-      title[0].innerHTML = "";
-    } catch {
-      titleContainer.innerHTML = "";
-    }
-
-    var text = tempElement.innerText.replace(/\n\s*\n/g, "<br><br>").trim();
-
-    tempElement = null;
-
-    textContainer.innerHTML = text;
-    // remove starting br
-    while (
-      textContainer.firstChild &&
-      textContainer.firstChild.tagName === "BR"
-    ) {
-      textContainer.removeChild(textContainer.firstChild);
-    }
+    return text;
   }
-  // fetch(api + "get_chapter?book=book.epub&href=chapter10.html", {
-  //   method: "GET",
-  // })
-  //   .then((res) => res.text())
-  //   .then((res) => {
-  //     parseHTMLToPlainText(res);
-  //   });
 
   const dropdown = document.getElementById("chapters");
 
@@ -557,7 +647,7 @@ window.addEventListener("DOMContentLoaded", () => {
         link.classList.add("dropdown-item");
         link.href = chapter.link;
 
-        link.textContent = chapter.title;
+        link.textContent = addEllipsis(chapter.title, 15);
 
         listItem.appendChild(link);
         dropdown.appendChild(listItem);

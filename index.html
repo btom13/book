@@ -24,14 +24,24 @@
     />
     <script src=" https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js "></script>
 
-    <title>Text Annotator</title>
+    <title>Napkin</title>
     <link rel="stylesheet" href="style.css" />
   </head>
 
   <body>
+    <div id="container1">
+      <div id="thing"></div>
+      <div id="selector" class="hidden">
+        <div class="selecting" id="default"></div>
+        <div class="selecting" id="sepia"></div>
+        <div class="selecting" id="night"></div>
+        <div class="selecting" id="gray"></div>
+        <div class="selecting" id="purple"></div>
+      </div>
+    </div>
     <nav class="navbar navbar-expand-lg navbar-dark">
       <div class="container-fluid">
-        <a class="navbar-brand mx-auto" href="#">Text Annotator</a>
+        <a class="navbar-brand mx-auto" href="#">Napkin</a>
         <button
           class="navbar-toggler"
           type="button"
@@ -95,11 +105,19 @@
           <div id="annotation-container"></div>
         </div>
       </div>
+      <br />
       <button id="prev" class="bottom-button">Previous</button>
       <button id="quest" class="bottom-button">Questions</button>
       <button id="next" class="bottom-button">Next</button>
     </div>
+    <div class="loading-icon">
+      <i class="fas fa-spinner fa-spin fa-3x"></i>
+    </div>
 
+    <script
+      src="https://kit.fontawesome.com/your-font-awesome-kit.js"
+      crossorigin="anonymous"
+    ></script>
     <dialog id="question-dialog">
       <i class="fa fa-square-xmark" id="close-dialog"></i>
       <div id="questions"></div>

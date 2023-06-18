@@ -1,23 +1,94 @@
 @import url("https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,300;0,400;1,200&display=swap");
 
+:root {
+  --background: #f2f2f2;
+  --foreground: #fff;
+  --border: black;
+  --highlight: rgb(255, 255, 156);
+  --themecolor: white;
+  --textcolor: black;
+}
+.navbar-brand.mx-auto {
+  font-size: x-large;
+}
+
 body,
 html {
   font-family: "Noto Sans", sans-serif;
-  background-color: #f2f2f2;
+  background-color: var(--background);
   font-size: 0.94rem;
   letter-spacing: 0.1rem;
   width: 100vw;
   height: 100vh;
+}
+
+#container1 {
+  display: flex;
+  flex-direction: column;
+  width: fit-content;
+  height: fit-content;
+  position: absolute;
+  top: 0;
+  z-index: 3;
+  right: 0;
+}
+
+#selector {
+  z-index: 3;
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  color: white;
+  padding: 10px;
+  background-color: gray;
+  border: 2px solid black;
+  margin-top: 5px;
+  margin-left: auto;
+  margin-right: 20px;
+}
+#selector.hidden {
+  display: none;
+}
+
+.selecting {
+  background-color: var(--themecolor);
+  border: 2px solid black;
+  border-radius: 100%;
+  width: 25px;
+  height: 25px;
+  z-index: 3;
+  position: relative;
+  color: black;
+}
+.selecting:hover {
+  cursor: pointer;
+}
+
+#thing {
+  background-color: var(--themecolor);
+  border: 2px solid black;
+  border-radius: 100%;
+  width: 25px;
+  height: 25px;
+  z-index: 3;
+  position: relative;
+  margin-left: auto;
+  margin-top: 20px;
+  margin-right: 20px;
+}
+
+#thing:hover {
+  cursor: pointer;
 }
 body {
   overflow-x: hidden;
 }
 .annotation {
   display: none;
-  background-color: #fff;
-  border: 1px solid #ddd;
+  background-color: var(--foreground);
   padding: 10px;
-  color: black;
+  color: var(--textcolor);
   margin-top: 5px;
 }
 .annotation-image {
@@ -27,25 +98,31 @@ div.annotation-image {
   width: 232px !important;
 }
 
+#navbarDropdownMenuLink {
+  font-size: medium;
+}
+
 .page {
-  background-color: #fff;
+  background-color: var(--foreground);
   padding: 2em 2em 1em 2em;
-  border: 2px solid black;
+  border: 2px solid var(--border);
+  color: var(--textcolor);
 }
 .annotation-div {
-  background-color: #fff;
+  background-color: var(--foreground);
+  color: var(--textcolor);
   top: 50%;
   transform: translate(0%, -50%);
   width: calc(4.2 / 12 * 100%);
   /* min-height: 40%; */
   /* position: fixed; */
   position: fixed;
-  border: 2px solid black;
+  border: 2px solid var(--border);
   padding: 1em;
 }
 
 .highlight {
-  background-color: yellow;
+  background-color: var(--highlight);
 }
 
 .navbar {
@@ -72,7 +149,7 @@ button,
 input {
   background-color: #262626;
   /* Green */
-  border: none;
+  border: 1px solid white;
   color: white;
   padding: 0.3em 0.8em;
   text-align: center;
@@ -86,6 +163,9 @@ input {
   margin-bottom: 20px;
   /* margin-left: 0px; */
   /* margin-right: 0px; */
+}
+#text-container {
+  color: var(--textcolor);
 }
 #text-container > p {
   margin: 0em;
@@ -142,4 +222,13 @@ img {
 
 .navbar.navbar-expand-lg.navbar-dark {
   z-index: 2;
+}
+
+.loading-icon {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  display: none;
 }
