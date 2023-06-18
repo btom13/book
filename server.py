@@ -31,8 +31,6 @@ def upload():
     return 'a'
 
 
-
-
 """
 {
     "choices": [
@@ -66,7 +64,6 @@ def text_annotation():
     data = request.get_json()
     book = data['book']
     text = data['text']
-    chapter = data['chapter']
 
     prompt = f'###Write a 2 to 5 sentence analysis of the following text from "{book}". DO NOT mention the name of the book or author###\n\n"""{text}"""'
     print(prompt)
@@ -82,7 +79,7 @@ def text_annotation():
                                                 "content": prompt
                                             }])
 
-    return response
+    return get_gpt_response(response)
 
 
 def get_gpt_response(json_response):
@@ -92,9 +89,7 @@ def get_gpt_response(json_response):
 @app.route("/image_annotation", methods=["POST"])
 def image_annotation():
     data = request.get_json()
-    book = data['book']
     text = data['text']
-    chapter = data['chapter']
     prompt = f'"""{text}"""\n\n' + "###Write only a 10 word description of this scene###\n\n"
     print("simplification prompt", prompt)
 
@@ -134,6 +129,7 @@ def get_chapters():  # frontm.html#pref04
     book = epub.read_epub(book_name)
     return find_chapter(chapter, book)
 
+
 @app.route("/flattened_chapters", methods=["GET"])
 def get_flattened_chapter():
     book_name = request.args.get('book')
@@ -147,9 +143,10 @@ def get_flattened_chapter():
             return ret
         else:
             return [arr]
-    
+
     return json.dumps(flatten(book.toc), cls=MyEncoder)
-    
+
+
 @app.route("/toc", methods=["GET"])
 def toc():
     book_name = request.args.get('book')
@@ -197,6 +194,7 @@ def grade_questions():
                 },
             ])
         ret.append(get_gpt_response(response))
+    print(ret)
     return jsonify(ret)
 
 
@@ -208,7 +206,7 @@ def generate_questions():
 
     responses = []
     for p in paragraphs:
-        prompt = "###Write a question based on this paragraph from {book_name}###\n\n" + f'"""{p}"""'
+        prompt = f"###Write a question based on this paragraph from {book_name}###\n\n" + f'"""{p}"""'
         response = openai.ChatCompletion.create(
             model="gpt-4",
             messages=[
@@ -236,60 +234,9 @@ def generate_questions():
         print(prompt)
         print(response)
         responses.append(get_gpt_response(response))
+    print(responses)
     return jsonify(responses)
 
 
 app.json_encoder = MyEncoder
 app.run(debug=True)
-
-# print(dec(chapters[0]))
-# for c in chapters:
-#     print(c)
-# print(bytes(chapters[5].get_content()).decode('utf-8'))
-
-# print(dec(chapters[5].get_content()))
-# print(len(book.toc[7][1]), len(chapters))
-# for i in book.toc[:-1]:
-#     print(i.href, i.title)
-#print(book.toc[7])
-
-# """
-# [<ebooklib.epub.Link object at 0x1037214b0>,
-#  <ebooklib.epub.Link object at 0x103721510>,
-#  <ebooklib.epub.Link object at 0x103721570>,
-#  <ebooklib.epub.Link object at 0x1037215d0>,
-#  <ebooklib.epub.Link object at 0x103721630>,
-#  <ebooklib.epub.Link object at 0x103721690>,
-#  <ebooklib.epub.Link object at 0x1037216f0>,
-#  (<ebooklib.epub.Section object at 0x103721750>, chapter 1a
-#   [<ebooklib.epub.Link object at 0x103721780>,
-#    <ebooklib.epub.Link object at 0x1037217e0>,
-#    <ebooklib.epub.Link object at 0x103721840>,
-#    <ebooklib.epub.Link object at 0x1037218a0>,
-#    <ebooklib.epub.Link object at 0x103721900>,
-#    <ebooklib.epub.Link object at 0x103721960>,
-#    <ebooklib.epub.Link object at 0x1037219c0>,
-#    <ebooklib.epub.Link object at 0x103721a20>,
-#    <ebooklib.epub.Link object at 0x103721a80>,
-#    <ebooklib.epub.Link object at 0x103721ae0>,
-#    <ebooklib.epub.Link object at 0x103721b40>,
-#    <ebooklib.epub.Link object at 0x103721ba0>,
-#    <ebooklib.epub.Link object at 0x103721c00>,
-#    <ebooklib.epub.Link object at 0x103721c60>,
-#    <ebooklib.epub.Link object at 0x103721cc0>,
-#    <ebooklib.epub.Link object at 0x103721d20>,
-#    <ebooklib.epub.Link object at 0x103721d80>,
-#    <ebooklib.epub.Link object at 0x103721de0>,
-#    <ebooklib.epub.Link object at 0x103721e40>,
-#    <ebooklib.epub.Link object at 0x103721ea0>,
-#    <ebooklib.epub.Link object at 0x103721f00>,
-#    <ebooklib.epub.Link object at 0x103721f60>,
-#    <ebooklib.epub.Link object at 0x103721fc0>,
-#    <ebooklib.epub.Link object at 0x103722020>,
-#    <ebooklib.epub.Link object at 0x103722080>,
-#    <ebooklib.epub.Link object at 0x1037220e0>,
-#    <ebooklib.epub.Link object at 0x103722140>,
-#    <ebooklib.epub.Link object at 0x1037221a0>,
-#    <ebooklib.epub.Link object at 0x103722200>,
-#    <ebooklib.epub.Link object at 0x103722260>])]
-# """

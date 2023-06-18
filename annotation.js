@@ -1,5 +1,7 @@
 window.addEventListener("DOMContentLoaded", () => {
   const api = "http://localhost:5000/";
+  // const api = "https://a06c-2607-f140-6000-f-dbd-7c97-4484-12b3.ngrok.io/";
+  // const api = "https://monthlyblanduserinterface.nealconway1.repl.co/";
   const dialog = document.getElementById("question-dialog");
   const textContainer = document.getElementById("text-container");
   const annotationContainer = document.getElementById("annotation-container");
@@ -8,14 +10,21 @@ window.addEventListener("DOMContentLoaded", () => {
   const annotationShower = document.getElementById("annotations");
   const questionButton = document.getElementById("quest");
   let currentQuestions = [];
+  let paragraphs = [];
   const questions = document.getElementById("questions");
-  function getQuestions() {
+  async function getQuestions() {
     if (currentQuestions.length === 0) {
-      currentQuestions = [
-        "What is the main idea?",
-        "What is the author's purpose?",
-        "What is the author's tone?",
-      ];
+      let re = await fetch(api + "generate_questions", {
+        method: "POST",
+        body: JSON.stringify({
+          paragraphs: paragraphs,
+          book: "Grapes of Wrath",
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      currentQuestions = await re.json();
 
       for (const question of currentQuestions) {
         let words = document.createElement("p");
@@ -25,6 +34,9 @@ window.addEventListener("DOMContentLoaded", () => {
         let textarea = document.createElement("textarea");
         textarea.classList.add("response");
         questions.appendChild(textarea);
+        let div = document.createElement("div");
+        div.classList.add("feedback");
+        questions.appendChild(div);
       }
       let submit = document.createElement("button");
       submit.textContent = "Submit";
@@ -36,21 +48,29 @@ window.addEventListener("DOMContentLoaded", () => {
         for (let i = 0; i < responses.length; i++) {
           res.push(responses[i].value);
         }
+        let response = [];
+        for (let i = 0; i < paragraphs.length; i++) {
+          response.push({
+            question: currentQuestions[i],
+            user_answer: res[i],
+            paragraph: paragraphs[i],
+          });
+        }
 
-        let query = {
-          data: [
-            {
-              question: "...",
-              answer: "...",
-            },
-            {
-              question: "...",
-              answer: "...",
-            },
-          ],
-          chapter: 1,
-        };
-        // send req to backend
+        let re = await fetch(api + "grade_questions", {
+          method: "POST",
+          body: JSON.stringify({
+            data: response,
+          }),
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        let r = await re.json();
+        let feedback = questions.getElementsByClassName("feedback");
+        for (let i = 0; i < feedback.length; i++) {
+          feedback[i].textContent = r[i];
+        }
       });
     }
   }
@@ -109,7 +129,7 @@ window.addEventListener("DOMContentLoaded", () => {
       imageButton.classList.add("image-button");
       imageButton.addEventListener(
         "click",
-        createAnnotation.bind(null, newNode)
+        createImageAnnotation.bind(null, newNode)
       );
 
       const cancelButton = document.createElement("button");
@@ -133,8 +153,19 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function createAnnotation(newNode) {
-    const annotation = "New Annotation";
+  async function createAnnotation(newNode) {
+    let res = await fetch(api + "text_annotation", {
+      method: "POST",
+      body: JSON.stringify({
+        book: "Grapes of Wrath",
+        text: newNode.textContent,
+      }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    const annotation = await res.text();
+
     lastHighlight = undefined;
 
     newNode.addEventListener(
@@ -149,9 +180,35 @@ window.addEventListener("DOMContentLoaded", () => {
     hideButtons();
   }
 
+  async function createImageAnnotation(newNode) {
+    let res = await fetch(api + "image_annotation", {
+      method: "POST",
+      body: JSON.stringify({
+        text: newNode.textContent,
+      }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    const url = await res.text();
+
+    lastHighlight = undefined;
+
+    newNode.addEventListener("mouseover", showImage.bind(null, url));
+    newNode.addEventListener("mouseout", hideAnnotation);
+    newNode.addEventListener("click", deleteAnnotation);
+
+    annotations.push({ element: newNode, url: url });
+    updateAnnotations();
+    hideButtons();
+  }
+
   function cancelAnnotation(newNode, buttonContainer) {
     newNode.outerHTML = newNode.innerHTML;
     buttonContainer.parentNode.removeChild(buttonContainer);
+  }
+  function showImage(url) {
+    annotationViewer.innerHTML = `<img src="${url}">`;
   }
 
   function showAnnotation(annotation) {
@@ -179,7 +236,11 @@ window.addEventListener("DOMContentLoaded", () => {
   function updateAnnotations() {
     annotationShower.innerHTML = "";
     for (const annotation of annotations) {
-      annotationShower.innerHTML += annotation.annotation + "<br>";
+      if (annotation.annotation) {
+        annotationShower.innerHTML += annotation.annotation + "<br>";
+      } else {
+        annotationShower.innerHTML += `<img src=${annotation.url}>` + "<br>";
+      }
     }
   }
 
@@ -224,12 +285,74 @@ window.addEventListener("DOMContentLoaded", () => {
 
     textContainer.innerHTML = text;
   }
-  fetch(api + "get_chapter?book=book.epub&href=chapter10.html", {
+  // fetch(api + "get_chapter?book=book.epub&href=chapter10.html", {
+  //   method: "GET",
+  // })
+  //   .then((res) => res.text())
+  //   .then((res) => {
+  //     parseHTMLToPlainText(res);
+  //   });
+
+  const dropdown = document.getElementById("chapters");
+  const links = [];
+
+  fetch(api + "flattened_chapters?book=book.epub", {
     method: "GET",
   })
-    .then((res) => res.text())
-    .then((res) => {
-      console.log(res);
-      parseHTMLToPlainText(res);
+    .then((response) => response.text())
+    .then((data) => {
+      data = JSON.parse(data);
+      data.forEach((chapter) => {
+        const listItem = document.createElement("li");
+        const link = document.createElement("a");
+        link.classList.add("dropdown-item");
+        link.href = chapter.link;
+
+        link.textContent = chapter.title;
+        // links.push(chapter.link);
+
+        listItem.appendChild(link);
+        dropdown.appendChild(listItem);
+      });
+    })
+    .catch((error) => {
+      console.log("Error fetching chapters:", error);
     });
+  dropdown.addEventListener("click", (event) => {
+    if (event.target.classList.contains("dropdown-item")) {
+      let chapterUrl = event.target.href.split("/").pop();
+      // Make a GET request to fetch the chapter text
+      fetch(api + "get_chapter?book=book.epub&href=" + chapterUrl, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/text",
+        },
+      })
+        .then((response) => response.text())
+        .then((data) => {
+          let html_temp = document.createElement("div");
+          html_temp.style.display = "none";
+          html_temp.innerHTML = data;
+          let paras = html_temp.getElementsByTagName("p");
+          paras = Array.from(paras);
+          paras = paras.map((para) => para.innerText);
+          paras = paras.filter((para) => para.length > 0);
+          paras = paras.sort((a, b) => b.length - a.length);
+          paragraphs = paras.slice(0, 3);
+          html_temp = null;
+
+          parseHTMLToPlainText(data);
+        })
+        .catch((error) => {
+          console.log("Error fetching chapter text:", error);
+        });
+
+      annotations.length = 0;
+      annotationViewer.innerHTML = "";
+      annotationShower.innerHTML = "";
+      currentQuestions = [];
+      questions.innerHTML = "";
+      event.preventDefault();
+    }
+  });
 });
