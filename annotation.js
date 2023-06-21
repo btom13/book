@@ -259,6 +259,7 @@ window.addEventListener("DOMContentLoaded", () => {
   const questions = document.getElementById("questions");
   async function getQuestions() {
     if (currentQuestions.length === 0) {
+      showLoadingIcon();
       let re = await fetch(api + "generate_questions", {
         method: "POST",
         body: JSON.stringify({
@@ -269,6 +270,7 @@ window.addEventListener("DOMContentLoaded", () => {
           "Content-Type": "application/json",
         },
       });
+      hideLoadingIcon();
       currentQuestions = await re.json();
 
       for (const question of currentQuestions) {

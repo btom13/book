@@ -1,4 +1,5 @@
 import flask_cors
+from flask_cors import cross_origin
 from flask import Flask, request, jsonify
 import ebooklib
 from ebooklib import epub
@@ -7,8 +8,12 @@ from json import JSONEncoder
 import openai
 
 app = Flask(__name__)
-flask_cors.CORS(app)
-app.config['CORS_HEADERS'] = 'Content-Type'
+flask_cors.CORS(app,
+                origins='http://127.0.0.1/:5500',
+                allow_headers=['Content-Type'],
+                supports_credentials=True)
+
+# app.config['CORS_HEADERS'] = 'Content-Type'
 
 
 # chapters = list(book.get_items_of_type(ebooklib.ITEM_DOCUMENT))
@@ -26,6 +31,7 @@ def dec(chapter):
 
 
 @app.route("/upload", methods=["POST"])
+@cross_origin()
 def upload():
     print(request.files)
     return 'a'
@@ -60,6 +66,7 @@ with open("config.json") as f:
 
 
 @app.route("/text_annotation", methods=["POST"])
+@cross_origin()
 def text_annotation():
     data = request.get_json()
     book = data['book']
@@ -87,6 +94,7 @@ def get_gpt_response(json_response):
 
 
 @app.route("/image_annotation", methods=["POST"])
+@cross_origin()
 def image_annotation():
     data = request.get_json()
     text = data['text']
@@ -125,6 +133,7 @@ def find_chapter(chapter, book):
 
 # curl "http://localhost:5000/get_chapter?book=book.epub&href=chapter01.html"
 @app.route("/get_chapter", methods=["GET"])
+@cross_origin()
 def get_chapters():  # frontm.html#pref04
     chapter = request.args.get('href')
     book_name = request.args.get('book')
@@ -134,6 +143,7 @@ def get_chapters():  # frontm.html#pref04
 
 
 @app.route("/flattened_chapters", methods=["GET"])
+@cross_origin()
 def get_flattened_chapter():
     book_name = request.args.get('book')
     book = epub.read_epub(book_name)
@@ -151,6 +161,7 @@ def get_flattened_chapter():
 
 
 @app.route("/toc", methods=["GET"])
+@cross_origin()
 def toc():
     book_name = request.args.get('book')
     book = epub.read_epub(book_name)
@@ -161,6 +172,7 @@ def toc():
 
 
 @app.route("/grade_questions", methods=["POST"])
+@cross_origin()
 def grade_questions():
     data = request.get_json()
     ret = []
@@ -202,6 +214,7 @@ def grade_questions():
 
 
 @app.route("/generate_questions", methods=["POST"])
+@cross_origin()
 def generate_questions():
     data = request.get_json()
     book_name = data['book']
