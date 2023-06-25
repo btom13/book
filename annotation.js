@@ -1,5 +1,5 @@
 window.addEventListener("DOMContentLoaded", () => {
-  const api = "http://localhost:5000/";
+  const api = "http://localhost:8000/";
   // const api = "https://a06c-2607-f140-6000-f-dbd-7c97-4484-12b3.ngrok.io/";
   // const api = "https://monthlyblanduserinterface.nealconway1.repl.co/";
   const dialog = document.getElementById("question-dialog");

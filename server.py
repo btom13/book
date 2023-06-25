@@ -8,10 +8,10 @@ from json import JSONEncoder
 import openai
 
 app = Flask(__name__)
-flask_cors.CORS(app,
-                origins='http://127.0.0.1/:5500',
-                allow_headers=['Content-Type'],
-                supports_credentials=True)
+# flask_cors.CORS(app,
+#                 origins='http://127.0.0.1/:5500',
+#                 allow_headers=['Content-Type'],
+#                 supports_credentials=True)
 
 # app.config['CORS_HEADERS'] = 'Content-Type'
 
@@ -255,4 +255,4 @@ def generate_questions():
 
 
 app.json_encoder = MyEncoder
-app.run(debug=True)
+app.run(debug=True, port=8000)
